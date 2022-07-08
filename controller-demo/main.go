@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"operator-demo/controller-demo/pkg"
+	"operator-demo/controller-demo/pkg/signals"
 
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -12,29 +13,34 @@ import (
 	"k8s.io/klog/v2"
 )
 
+const workerNum = 5
+
 func main() {
+	stopChan := signals.SetupSignalHandler()
+
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
 		config, err = rest.InClusterConfig()
 		if err != nil {
-			klog.Fatal("can't get config")
+			klog.Fatalf("failed to build kube config: %s", err.Error())
 		}
 	}
 
 	clientSet, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		klog.Fatal("can't create client")
+		klog.Fatalf("failed to build kubernetes client: %s", err.Error())
 	}
 
 	factory := informers.NewSharedInformerFactory(clientSet, time.Second*30)
+
 	serviceInformer := factory.Core().V1().Services()
 	ingressInformer := factory.Networking().V1().Ingresses()
 
 	controller := pkg.NewController(clientSet, serviceInformer, ingressInformer)
 
-	stopChan := make(chan struct{})
 	factory.Start(stopChan)
-	factory.WaitForCacheSync(stopChan)
 
-	controller.Run(stopChan)
+	if err := controller.Run(workerNum, stopChan); err != nil {
+		klog.Fatalf("failed to run controller: %s", err.Error())
+	}
 }
