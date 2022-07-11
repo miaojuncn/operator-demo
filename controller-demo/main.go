@@ -3,8 +3,8 @@ package main
 import (
 	"time"
 
-	"operator-demo/controller-demo/pkg"
-	"operator-demo/controller-demo/pkg/signals"
+	"controller-demo/pkg"
+	"controller-demo/pkg/signals"
 
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
