@@ -1,0 +1,14 @@
+apiVersion: appcontroller.mj.learn/v1alpha1
+kind: App
+metadata:
+  name: app-demo
+spec:
+  deployment:
+    name: app-deployment-demo
+    replicas: 2
+    image: nginx:latest
+  service:
+    name: app-service-demo
+  ingress:
+    name: app-ingress-demo
+status: {}
