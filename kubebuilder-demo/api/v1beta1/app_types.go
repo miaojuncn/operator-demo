@@ -8,7 +8,8 @@ type AppSpec struct {
 	Image         string `json:"image"`
 	Replicas      int32  `json:"replicas"`
 	EnableService bool   `json:"enable_service"`
-	EnableIngress bool   `json:"enable_ingress"`
+	// +kubebuilder:default:enable_ingress=false
+	EnableIngress bool `json:"enable_ingress"`
 }
 
 type AppStatus struct {

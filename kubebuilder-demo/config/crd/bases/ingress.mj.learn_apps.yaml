@@ -35,6 +35,7 @@ spec:
           spec:
             properties:
               enable_ingress:
+                default: false
                 type: boolean
               enable_service:
                 type: boolean
