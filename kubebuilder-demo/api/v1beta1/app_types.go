@@ -13,8 +13,16 @@ type AppSpec struct {
 }
 
 type AppStatus struct {
+	DeploymentName string `json:"deployment_name"`
+	// +kubebuilder:default:service_name=""
+	ServiceName string `json:"service_name"`
+	// +kubebuilder:default:ingress_name=""
+	IngressName string `json:"ingress_name"`
 }
 
+// +kubebuilder:printcolumn:name:"deployment",type:string,JSONPath=`.status.deployment_name`
+// +kubebuilder:printcolumn:name:"service",type:string,JSONPath=`.status.service_name`
+// +kubebuilder:printcolumn:name:"ingress",type:string,JSONPath=`.status.ingress_name`
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 

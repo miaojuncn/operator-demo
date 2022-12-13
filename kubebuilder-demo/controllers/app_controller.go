@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -38,7 +39,8 @@ import (
 // AppReconciler reconciles a App object
 type AppReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
 }
 
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
@@ -77,14 +79,19 @@ func (r *AppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	if err := r.Get(ctx, req.NamespacedName, d); err != nil {
 		if errors.IsNotFound(err) {
 			if err := r.Create(ctx, deployment); err != nil {
+				r.Recorder.Event(app, "Error", "Create", "创建 Deployment 失败")
 				logger.Error(err, "create deploy failed")
 				return ctrl.Result{}, err
 			}
+			app.Status.DeploymentName = d.Name
+			r.Recorder.Event(app, corev1.EventTypeNormal, "Create", "创建 Deployment 成功")
 		}
 	} else {
 		if err := r.Update(ctx, deployment); err != nil {
+			r.Recorder.Event(app, "Error", "Update", "更新 Deployment 失败")
 			return ctrl.Result{}, err
 		}
+		r.Recorder.Event(app, corev1.EventTypeNormal, "Update", "更新 Deployment 成功")
 	}
 
 	// 2. Service的处理
@@ -100,6 +107,7 @@ func (r *AppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 				logger.Error(err, "create service failed")
 				return ctrl.Result{}, err
 			}
+			app.Status.ServiceName = s.Name
 		}
 		if !errors.IsNotFound(err) && app.Spec.EnableService {
 			return ctrl.Result{}, err
@@ -111,7 +119,7 @@ func (r *AppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			if err := r.Delete(ctx, s); err != nil {
 				return ctrl.Result{}, err
 			}
-
+			app.Status.ServiceName = ""
 		}
 	}
 
@@ -127,6 +135,7 @@ func (r *AppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 				logger.Error(err, "create ingress failed")
 				return ctrl.Result{}, err
 			}
+			app.Status.IngressName = i.Name
 		}
 		if !errors.IsNotFound(err) && app.Spec.EnableIngress {
 			return ctrl.Result{}, err
@@ -138,6 +147,7 @@ func (r *AppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			if err := r.Delete(ctx, i); err != nil {
 				return ctrl.Result{}, err
 			}
+			app.Status.IngressName = ""
 		}
 	}
 

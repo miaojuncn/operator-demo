@@ -51,6 +51,19 @@ spec:
             - replicas
             type: object
           status:
+            properties:
+              deployment_name:
+                type: string
+              ingress_name:
+                default: ""
+                type: string
+              service_name:
+                default: ""
+                type: string
+            required:
+            - deployment_name
+            - ingress_name
+            - service_name
             type: object
         type: object
     served: true
